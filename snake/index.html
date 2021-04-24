@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>snake</title>
+</head>
+<body>
+    <canvas id="app" style="border: 20px solid black;">
+    </canvas>
+    <script>
+        let sigma = 200;
+        let map = {
+            width: 20,
+            height: 20,
+        }
+        let direction = {
+            UP: {
+                x: 0,
+                y: -1,
+            },
+            DOWN: {
+                x: 0,
+                y: 1,
+            },
+            LEFT: {
+                x: -1,
+                y: 0,
+            },
+            RIGHT: {
+                x: 1,
+                y: 0,
+            }
+        }
+        let bodySize = 20;
+        //inital canvas
+        let app = document.getElementById('app');
+        app.height =  Math.ceil(map.height * bodySize);
+        app.width = Math.ceil(map.width * bodySize);
+        let ctx = app.getContext('2d');
+ 
+        function random(range) {
+            return Math.ceil(Math.random()*range)
+        }
+        let snakeInital = {
+            x: random(map.width-2),
+            y: random(map.height-2),
+        }
+        let food = {
+            x: random(map.width-1),
+            y: random(map.height-1),
+            color: "red"
+        }
+        class Snake {
+            constructor(location) {
+                this.position = [location];
+                this.forward  = direction.RIGHT;
+                this.cellSize = bodySize;
+                this.color = 'green';
+
+                this.position.push({x:this.position[0].x + this.forward.x, y: this.position[0].y + this.forward.y})
+            }
+
+            get lenght () {
+                return this.position.lenght;
+            }
+
+            run () {
+                this.eat()
+                this.position.pop();
+            }
+
+            eat () {
+                let head = this.position[0];
+                let next = {x: head.x + this.forward.x, y: head.y + this.forward.y};
+                this.position.unshift(next);
+            }
+            up () {
+                if (this.forward != direction.DOWN){
+                    this.forward = direction.UP;
+                }
+            }
+            down () {
+                if (this.forward != direction.UP)
+                this.forward = direction.DOWN;
+            }
+            left () {
+                if (this.forward != direction.RIGHT)
+                this.forward = direction.LEFT;
+            }
+            right () {
+                if (this.forward != direction.LEFT)
+                this.forward = direction.RIGHT;
+            }
+        }
+
+        let s = new Snake(snakeInital);
+        document.body.onkeypress = (event) => {
+                    switch(event.key) {
+                        case 'a'://Left arrow
+                        case 'A':
+                            s.left()
+                            break;
+                        case 'w'://Up arrow
+                        case 'W':
+                            s.up()
+                            break;
+                        case 'd'://Right Arrow
+                        case 'D':
+                            s.right()
+                            break;
+                        case 's':
+                        case 'S'://Down Arrow
+                            s.down()
+                            break;
+                    }
+                }
+        let mainLoop = (sigma)=>
+            ()=>{
+                //boundary
+                if (s.position[0].x < 0 || s.position[0].x >= map.width ||
+                    s.position[0].y < 0 || s.position[0].y >= map.height
+                ) {
+                    return;
+                }
+                //eat self
+                let body = s.position.slice(3,s.lenght);
+                let isEatSelf = false;
+                for (let i = 3; i < s.position.length; i++) {
+                    if (s.position[0].x == s.position[i].x && s.position[0].y == s.position[i].y) {
+                        isEatSelf = true;
+                        return;
+                    }
+                }
+                if (isEatSelf) {
+                    return;
+                }
+                //run
+                if (s.position[0].x == food.x && s.position[0].y == food.y) {
+                    s.eat();
+                    //check and produce
+                    let outSnake = true;
+                    do {
+                        food.x = random(map.width-1);
+                        food.y = random(map.height-1);
+                        s.position.forEach(v => {
+                             if (food.x == v.x && food.y == v.y) {
+                                 outSnake = false;
+                                 return;
+                             }
+                         })
+                    } while (!outSnake)
+
+                }else {
+                    s.run();
+                }
+                //clear draw
+                ctx.clearRect(0,0,map.width*bodySize, map.height*bodySize);
+                //draw food
+                ctx.fillStyle = food.color;
+                ctx.fillRect(food.x*bodySize, food.y*bodySize, bodySize, bodySize);
+                //draw snake
+                s.position.forEach((v,i)=> {
+                    if (i == 0){
+                        ctx.fillStyle = "blue"
+                    }else{
+                        ctx.fillStyle = s.color;
+                    }
+                    ctx.fillRect(v.x*bodySize, v.y*bodySize, bodySize, bodySize);
+                });
+            }
+        let timer = setInterval(mainLoop(sigma), sigma);
+    </script>
+</body>
+</html>
